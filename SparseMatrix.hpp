@@ -77,13 +77,25 @@ public:
     _matrix.emplace(std::make_pair(i, value));
   };
   /// \brief insert a value in the matrix. If the element already exist, it
-  /// overwrites it \param i row index \param j column index \param value value
-  /// to insert
+  /// overwrites it 
+  /// \param i row index 
+  /// \param j column index 
+  /// \param value value to insert
   void insert_or_assign(int i, int j, T value) {
     if (i >= _rows || j >= _cols || i < 0 || j < 0) {
       throw std::out_of_range("Index out of range");
     }
     _matrix.insert_or_assign(i * _cols + j, value);
+  };
+  /// \brief insert a value in the matrix. If the element already exist, it
+  /// overwrites it 
+  /// \param index index in vectorial form
+  /// \param value value to insert
+  void insert_or_assign(int index, T value) {
+    if (index < 0 || index > _rows * _cols - 1) {
+      throw std::out_of_range("Index out of range");
+    }
+    _matrix.insert_or_assign(index, value);
   };
   /// \brief remove a value from the matrix
   /// \param i row index
@@ -95,8 +107,15 @@ public:
   };
   void clear() noexcept { _matrix.clear(); };
   /// \brief check if the element is non zero
+  /// \param i row index
+  /// \param j column index
   bool contains(int i, int j) const noexcept {
     return _matrix.contains(i * _cols + j);
+  };
+  /// \brief check if the element is non zero
+  /// \param index index in vectorial form
+  bool contains(int const index) const noexcept {
+    return _matrix.contains(index);
   };
   std::vector<int> getDegreeVector() {
     if (_rows != _cols || !std::is_same<T, bool>::value) {
@@ -169,6 +188,13 @@ public:
   int getRowDim() const noexcept { return this->_rows; };
   int getColDim() const noexcept { return this->_cols; };
   int size() const noexcept { return this->_rows * this->_cols; };
+  T at(int i, int j) const {
+    if(i >= _rows || j >= _cols || i < 0 || j < 0) {
+      throw std::out_of_range("Index out of range");
+    }
+    auto const &it = _matrix.find(i * _cols + j);
+    return it != _matrix.end() ? it->second : _defaultReturn;
+  }
 
   /// @brief print the matrix in standard output
   void print() const noexcept {
@@ -211,10 +237,63 @@ public:
     auto const &it = _matrix.find(i * _cols + j);
     return it != _matrix.end() ? it->second : _defaultReturn;
   }
+  T const &operator()(int index) {
+    if (index >= _rows * _cols || index < 0) {
+      throw std::out_of_range("Index out of range");
+    }
+    auto const &it = _matrix.find(index);
+    return it != _matrix.end() ? it->second : _defaultReturn;
+  }
+  /// @brief transpose the matrix
+  /// @return the transposed matrix
+  SparseMatrix operator!() {
+    auto transpost = SparseMatrix(this->_cols, this->_rows);
+    for (auto &it : _matrix) {
+      transpost.insert(it.first % _cols, it.first / _cols, it.second);
+    }
+    return transpost;
+  }
   SparseMatrix &operator=(const SparseMatrix &other) {
     this->_rows = other._rows;
     this->_cols = other._cols;
     this->_matrix = other._matrix;
+    return *this;
+  }
+  SparseMatrix &operator+=(const SparseMatrix &other) {
+    if (this->_rows != other._rows || this->_cols != other._cols) {
+      throw std::runtime_error("SparseMatrix: dimensions do not match");
+    }
+    for(auto &it : other._matrix) {
+      this->contains(it.first) ? this->insert_or_assign(it.first, this->operator()(it.first) + it.second) : this->insert(it.first, it.second);
+    }
+    return *this;
+  }
+  SparseMatrix &operator-=(const SparseMatrix &other) {
+    if (this->_rows != other._rows || this->_cols != other._cols) {
+      throw std::runtime_error("SparseMatrix: dimensions do not match");
+    }
+    for(auto &it : other._matrix) {
+      this->contains(it.first) ? this->insert_or_assign(it.first, this->operator()(it.first) - it.second) : this->insert(it.first, -it.second);
+    }
+    return *this;
+  }
+  SparseMatrix &operator*=(const SparseMatrix &other) {
+    if (this->_cols != other._rows) {
+      throw std::runtime_error("SparseMatrix: dimensions do not match");
+    }
+    auto result = SparseMatrix(this->_rows, other._cols);
+    for (int i = 0; i < this->_rows; ++i) {
+      for (int j = 0; j < other._cols; ++j) {
+        T sum = 0;
+        for (int k = 0; k < this->_cols; ++k) {
+          sum += this->operator()(i, k) * other.at(k, j);
+        }
+        if (sum != 0) {
+          result.insert(i, j, sum);
+        }
+      }
+    }
+    *this = result;
     return *this;
   }
 };
