@@ -13,7 +13,6 @@
 #include <random>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -33,22 +32,12 @@ public:
         : _rows = rows,
           _cols = cols;
   };
-  /// \brief SparseMatrix constructor
-  /// \param fName matrix file path
-  SparseMatrix(std::string fName) {
-    std::ifstream file(fName);
-    if (!file.is_open())
-      throw std::invalid_argument("SparseMatrix: file not found");
-    file >> _rows >> _cols;
-    int pos;
-    T value;
-    while (file >> pos >> value) {
-      if (pos < 0 || pos > (_rows * _cols) - 1)
-        throw std::invalid_argument("SparseMatrix: index out of bounds");
-      _matrix.insert({pos, value});
-    }
-    file.close();
-  }
+  /// \brief SparseMatrix constructor - colum 
+  /// \param index number of rows
+  SparseMatrix(int index) {
+    index < 0 ? throw std::invalid_argument("SparseMatrix: index must be > 0")
+              : _rows = index, _cols = 1;
+  };
   /// \brief SparseMatrix constructor
   /// \param other other SparseMatrix
   SparseMatrix(SparseMatrix const &other) {
@@ -56,6 +45,7 @@ public:
     this->_cols = other._cols;
     this->_matrix = other._matrix;
   };
+  ~SparseMatrix() = default;
 
   /// \brief insert a value in the matrix
   /// \param i row index
@@ -234,6 +224,7 @@ public:
   /// @brief save the matrix in a file in matrix format
   void saveAsMatrix(std::string fName) const {
     std::ofstream file(fName);
+    file << _rows << '\t' << _cols << '\n';
     for (int i = 0; i < _rows; ++i) {
       for (int j = 0; j < _cols; ++j) {
         auto const &it = _matrix.find(i * _cols + j);
@@ -241,6 +232,46 @@ public:
         file << '\t';
       }
       file << '\n';
+    }
+    file.close();
+  }
+
+  /// @brief import a matrix from a file in map format
+  /// @param fName file name
+  void import(std::string fName) {
+    std::ifstream file(fName);
+    if (!file.is_open()) {
+      throw std::runtime_error("SparseMatrix: file not found");
+    }
+    int rows, cols;
+    file >> rows >> cols;
+    _rows = rows;
+    _cols = cols;
+    int index;
+    T value;
+    while (file >> index >> value) {
+      _matrix.emplace(std::make_pair(index, value));
+    }
+    file.close();
+  }
+  /// @brief import a matrix from a file in matrix format
+  /// @param fName file name
+  void importAsMatrix(std::string fName) {
+    std::ifstream file(fName);
+    if (!file.is_open()) {
+      throw std::runtime_error("SparseMatrix: file not found");
+    }
+    int rows, cols;
+    file >> rows >> cols;
+    _rows = rows;
+    _cols = cols;
+    int index = 0;
+    T value;
+    while (file >> value) {
+      if (static_cast<int>(value) != 0) {
+        _matrix.emplace(std::make_pair(index, value));
+      }
+      ++index;
     }
     file.close();
   }
