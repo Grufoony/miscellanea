@@ -1,4 +1,4 @@
-//! SparseMatrix class v1.4 by Grufoony
+//! SparseMatrix class v1.5 by Grufoony
 //! https://github.com/Grufoony/miscellaneous
 
 //!  This class implements a sparse matrix. The matrix is stored in a compressed
@@ -77,9 +77,9 @@ public:
     _matrix.emplace(std::make_pair(i, value));
   };
   /// \brief insert a value in the matrix. If the element already exist, it
-  /// overwrites it 
-  /// \param i row index 
-  /// \param j column index 
+  /// overwrites it
+  /// \param i row index
+  /// \param j column index
   /// \param value value to insert
   void insert_or_assign(int i, int j, T value) {
     if (i >= _rows || j >= _cols || i < 0 || j < 0) {
@@ -88,7 +88,7 @@ public:
     _matrix.insert_or_assign(i * _cols + j, value);
   };
   /// \brief insert a value in the matrix. If the element already exist, it
-  /// overwrites it 
+  /// overwrites it
   /// \param index index in vectorial form
   /// \param value value to insert
   void insert_or_assign(int index, T value) {
@@ -117,16 +117,31 @@ public:
   bool contains(int const index) const noexcept {
     return _matrix.contains(index);
   };
-  std::vector<int> getDegreeVector() {
-    if (_rows != _cols || !std::is_same<T, bool>::value) {
-      throw std::runtime_error("SparseMatrix: getDegreeVector only works on "
-                               "square boolean matrices");
+  SparseMatrix<int> getDegreeVector() {
+    if(_rows != _cols) {
+      throw std::runtime_error("SparseMatrix: getDegreeVector only works on square matrices");
     }
-    std::vector<int> degreeVector(_rows, 0);
+    auto degreeVector = SparseMatrix<int>(_rows, 1);
     for (auto &i : _matrix) {
-      degreeVector[i.first / _cols]++;
+      degreeVector.insert_or_assign(
+          i.first / _cols, 0, degreeVector.at(i.first / _cols, 0) + 1);
     }
     return degreeVector;
+  };
+  SparseMatrix<int> getLaplacian() {
+    if(_rows != _cols) {
+      throw std::runtime_error("SparseMatrix: getLaplacian only works on square matrices");
+    }
+    auto laplacian = SparseMatrix<int>(_rows, _cols);
+    for (auto &i : _matrix) {
+      laplacian.insert_or_assign(i.first / _cols, i.first % _cols,
+                                 -1);
+    }
+    auto degreeVector = this->getDegreeVector();
+    for (int i = 0; i < _rows; i++) {
+      laplacian.insert_or_assign(i, i, degreeVector.at(i, 0));
+    }
+    return laplacian;
   };
 
   std::unordered_map<int, T> getRow(int index) const {
@@ -189,7 +204,7 @@ public:
   int getColDim() const noexcept { return this->_cols; };
   int size() const noexcept { return this->_rows * this->_cols; };
   T at(int i, int j) const {
-    if(i >= _rows || j >= _cols || i < 0 || j < 0) {
+    if (i >= _rows || j >= _cols || i < 0 || j < 0) {
       throw std::out_of_range("Index out of range");
     }
     auto const &it = _matrix.find(i * _cols + j);
@@ -244,9 +259,58 @@ public:
     auto const &it = _matrix.find(index);
     return it != _matrix.end() ? it->second : _defaultReturn;
   }
+
+  SparseMatrix operator+(const SparseMatrix &other) const {
+    if (this->_rows != other._rows || this->_cols != other._cols) {
+      throw std::runtime_error("SparseMatrix: dimensions do not match");
+    }
+    auto result = SparseMatrix(this->_rows, this->_cols);
+    for (auto &it : this->_matrix) {
+      result.insert(it.first / this->_cols, it.first % this->_cols, it.second);
+    }
+    for (auto &it : other._matrix) {
+      result.insert(it.first / other._cols, it.first % other._cols,
+                    it.second + result.at(it.first / other._cols,
+                                          it.first % other._cols));
+    }
+    return result;
+  }
+  SparseMatrix operator-(const SparseMatrix &other) const {
+    if (this->_rows != other._rows || this->_cols != other._cols) {
+      throw std::runtime_error("SparseMatrix: dimensions do not match");
+    }
+    auto result = SparseMatrix(this->_rows, this->_cols);
+    for (auto &it : this->_matrix) {
+      result.insert(it.first / this->_cols, it.first % this->_cols, it.second);
+    }
+    for (auto &it : other._matrix) {
+      result.insert(it.first / other._cols, it.first % other._cols,
+                    result.at(it.first / other._cols, it.first % other._cols) -
+                        it.second);
+    }
+    return result;
+  }
+  SparseMatrix operator*(const SparseMatrix &other) const {
+    if (this->_cols != other._rows) {
+      throw std::runtime_error("SparseMatrix: dimensions do not match");
+    }
+    auto result = SparseMatrix(this->_rows, other._cols);
+    for (int i = 0; i < this->_rows; ++i) {
+      for (int j = 0; j < other._cols; ++j) {
+        T sum = 0;
+        for (int k = 0; k < this->_cols; ++k) {
+          sum += this->at(i, k) * other.at(k, j);
+        }
+        if (sum != 0) {
+          result.insert(i, j, sum);
+        }
+      }
+    }
+    return result;
+  }
   /// @brief transpose the matrix
   /// @return the transposed matrix
-  SparseMatrix operator!() {
+  SparseMatrix operator++() {
     auto transpost = SparseMatrix(this->_cols, this->_rows);
     for (auto &it : _matrix) {
       transpost.insert(it.first % _cols, it.first / _cols, it.second);
@@ -259,12 +323,21 @@ public:
     this->_matrix = other._matrix;
     return *this;
   }
+  SparseMatrix &operator=(SparseMatrix &&other) {
+    this->_rows = other._rows;
+    this->_cols = other._cols;
+    this->_matrix = std::move(other._matrix);
+    return *this;
+  }
   SparseMatrix &operator+=(const SparseMatrix &other) {
     if (this->_rows != other._rows || this->_cols != other._cols) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
-    for(auto &it : other._matrix) {
-      this->contains(it.first) ? this->insert_or_assign(it.first, this->operator()(it.first) + it.second) : this->insert(it.first, it.second);
+    for (auto &it : other._matrix) {
+      this->contains(it.first)
+          ? this->insert_or_assign(it.first,
+                                   this->operator()(it.first) + it.second)
+          : this->insert(it.first, it.second);
     }
     return *this;
   }
@@ -272,8 +345,11 @@ public:
     if (this->_rows != other._rows || this->_cols != other._cols) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
-    for(auto &it : other._matrix) {
-      this->contains(it.first) ? this->insert_or_assign(it.first, this->operator()(it.first) - it.second) : this->insert(it.first, -it.second);
+    for (auto &it : other._matrix) {
+      this->contains(it.first)
+          ? this->insert_or_assign(it.first,
+                                   this->operator()(it.first) - it.second)
+          : this->insert(it.first, -it.second);
     }
     return *this;
   }
@@ -286,7 +362,7 @@ public:
       for (int j = 0; j < other._cols; ++j) {
         T sum = 0;
         for (int k = 0; k < this->_cols; ++k) {
-          sum += this->operator()(i, k) * other.at(k, j);
+          sum += this->at(i, k) * other.at(k, j);
         }
         if (sum != 0) {
           result.insert(i, j, sum);
