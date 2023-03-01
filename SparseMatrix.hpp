@@ -134,26 +134,30 @@ public:
     return laplacian;
   };
 
-  std::unordered_map<int, T> getRow(int index) const {
+  /// \brief get a row as a row vector
+  /// \param index row index
+  SparseMatrix getRow(int index) const {
     if (index >= _rows || index < 0) {
       throw std::out_of_range("Index out of range");
     }
-    std::unordered_map<int, T> row;
+    SparseMatrix row(1, _cols);
     for (auto &it : _matrix) {
       if (it.first / _cols == index) {
-        row.emplace(std::make_pair(it.first % _cols, it.second));
+        row.insert(it.first % _cols, it.second);
       }
     }
     return row;
   }
-  std::unordered_map<int, T> getCol(int index) const {
+  /// \brief get a column as a column vector
+  /// \param index column index
+  SparseMatrix getCol(int index) const {
     if (index >= _cols || index < 0) {
       throw std::out_of_range("Index out of range");
     }
-    std::unordered_map<int, T> col;
+    SparseMatrix col(_rows, 1);
     for (auto &it : _matrix) {
       if (it.first % _cols == index) {
-        col.emplace(std::make_pair(it.first / _cols, it.second));
+        col.insert(it.first / _cols, it.second);
       }
     }
     return col;
