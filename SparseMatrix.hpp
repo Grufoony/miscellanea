@@ -32,11 +32,12 @@ public:
         : _rows = rows,
           _cols = cols;
   };
-  /// \brief SparseMatrix constructor - colum 
+  /// \brief SparseMatrix constructor - colum
   /// \param index number of rows
   SparseMatrix(int index) {
     index < 0 ? throw std::invalid_argument("SparseMatrix: index must be > 0")
-              : _rows = index, _cols = 1;
+              : _rows = index,
+                _cols = 1;
   };
   /// \brief SparseMatrix constructor
   /// \param other other SparseMatrix
@@ -107,25 +108,27 @@ public:
   bool contains(int const index) const noexcept {
     return _matrix.contains(index);
   };
+  std::unordered_map<int, T> getMap() const { return _matrix; };
   SparseMatrix<int> getDegreeVector() {
-    if(_rows != _cols) {
-      throw std::runtime_error("SparseMatrix: getDegreeVector only works on square matrices");
+    if (_rows != _cols) {
+      throw std::runtime_error(
+          "SparseMatrix: getDegreeVector only works on square matrices");
     }
     auto degreeVector = SparseMatrix<int>(_rows, 1);
     for (auto &i : _matrix) {
-      degreeVector.insert_or_assign(
-          i.first / _cols, 0, degreeVector.at(i.first / _cols, 0) + 1);
+      degreeVector.insert_or_assign(i.first / _cols, 0,
+                                    degreeVector.at(i.first / _cols, 0) + 1);
     }
     return degreeVector;
   };
   SparseMatrix<int> getLaplacian() {
-    if(_rows != _cols) {
-      throw std::runtime_error("SparseMatrix: getLaplacian only works on square matrices");
+    if (_rows != _cols) {
+      throw std::runtime_error(
+          "SparseMatrix: getLaplacian only works on square matrices");
     }
     auto laplacian = SparseMatrix<int>(_rows, _cols);
     for (auto &i : _matrix) {
-      laplacian.insert_or_assign(i.first / _cols, i.first % _cols,
-                                 -1);
+      laplacian.insert_or_assign(i.first / _cols, i.first % _cols, -1);
     }
     auto degreeVector = this->getDegreeVector();
     for (int i = 0; i < _rows; i++) {
@@ -194,9 +197,43 @@ public:
     std::advance(it, dist(rng));
     return *it;
   }
-  int getRowDim() const noexcept { return this->_rows; };
-  int getColDim() const noexcept { return this->_cols; };
-  int size() const noexcept { return this->_rows * this->_cols; };
+  /// @brief get a matrix of double with every row normalized to 1
+  /// @return a matrix of double
+  SparseMatrix<double> getNormRows() const {
+    SparseMatrix<double> normRows(_rows, _cols);
+    for (int index = 0; index < _rows; index++) {
+      auto row = this->getRow(index);
+      double sum = 0.;
+      for (auto &it : row.getMap()) {
+        sum += std::abs(it.second);
+      }
+      sum < std::numeric_limits<double>::epsilon() ? sum = 1. : sum = sum;
+      for (auto &it : row.getMap()) {
+        normRows.insert(it.first + index * _cols, it.second / sum);
+      }
+    }
+    return normRows;
+  }
+  /// @brief get a matrix of double with every column normalized to 1
+  /// @return a matrix of double
+  SparseMatrix<double> getNormCols() const {
+    SparseMatrix<double> normCols(_rows, _cols);
+    for (int index = 0; index < _cols; index++) {
+      auto col = this->getCol(index);
+      double sum = 0.;
+      for (auto &it : col.getMap()) {
+        sum += std::abs(it.second);
+      }
+      sum < std::numeric_limits<double>::epsilon() ? sum = 1. : sum = sum;
+      for (auto &it : col.getMap()) {
+        normCols.insert(it.first + index * _rows, it.second / sum);
+      }
+    }
+    return normCols;
+  }
+  int getRowDim() const noexcept { return this->_rows; }
+  int getColDim() const noexcept { return this->_cols; }
+  int size() const noexcept { return this->_rows * this->_cols; }
   T at(int i, int j) const {
     if (i >= _rows || j >= _cols || i < 0 || j < 0) {
       throw std::out_of_range("Index out of range");
