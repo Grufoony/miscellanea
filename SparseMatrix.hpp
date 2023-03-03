@@ -1,4 +1,4 @@
-//! SparseMatrix class v1.5 by Grufoony
+//! SparseMatrix class v1.6 by Grufoony
 //! https://github.com/Grufoony/miscellaneous
 
 //!  This class implements a sparse matrix. The matrix is stored in a compressed
@@ -46,7 +46,51 @@ public:
     this->_cols = other._cols;
     this->_matrix = other._matrix;
   };
-  ~SparseMatrix() = default;
+
+  static void encode(std::string const &filename) {
+    std::fstream file;
+    int rows, cols;
+    std::unordered_map<int, T> matrix = {};
+    file.open(filename, std::ios::in);
+    file >> rows >> cols;
+    T value;
+    int i = 0;
+    while(file >> value) {
+      if(value != 0) {
+        matrix.emplace(std::make_pair(i, value));
+      }
+      ++i;
+    }
+    file.close();
+    file.open(filename, std::ios::out);
+    file << rows << '\t' << cols << '\n';
+    for(auto const& [key, value] : matrix) {
+      file << key << '\t' << value << '\n';
+    }
+    file.close();
+  }
+  static void decode(std::string const &filename) {
+    std::fstream file(filename);
+    int rows, cols, index;
+    std::unordered_map<int, T> matrix = {};
+    file >> rows >> cols;
+    T value;
+    while(file >> index >> value) {
+      matrix.emplace(std::make_pair(index, value));
+    }
+    file.close();
+    file.open(filename, std::ios::out);
+    file << rows << '\t' << cols << '\n';
+    for(int i = 0; i < rows * cols; ++i) {
+      if (matrix.find(i) != matrix.end()) {
+        file << matrix[i] << '\t';
+      } else {
+        file << 0 << '\t';
+      }
+      if((i + 1) % cols == 0) {
+        file << '\n';
+      }
+  }}
 
   /// \brief insert a value in the matrix
   /// \param i row index
@@ -108,7 +152,6 @@ public:
   bool contains(int const index) const noexcept {
     return _matrix.contains(index);
   };
-  std::unordered_map<int, T> getMap() const { return _matrix; };
   SparseMatrix<int> getDegreeVector() {
     if (_rows != _cols) {
       throw std::runtime_error(
@@ -241,6 +284,13 @@ public:
     auto const &it = _matrix.find(i * _cols + j);
     return it != _matrix.end() ? it->second : _defaultReturn;
   }
+  T at(int index) const {
+    if (index >= _rows * _cols || index < 0) {
+      throw std::out_of_range("Index out of range");
+    }
+    auto const &it = _matrix.find(index);
+    return it != _matrix.end() ? it->second : _defaultReturn;
+  }
 
   /// @brief print the matrix in standard output
   void print() const noexcept {
@@ -253,18 +303,10 @@ public:
       std::cout << '\n';
     }
   }
-  /// @brief save the matrix in a file in map format
-  void save(std::string fName) const {
-    std::ofstream file(fName);
-    file << _rows << '\t' << _cols << '\n';
-    for (auto const &it : _matrix) {
-      file << it.first << '\t' << it.second << '\n';
-    }
-    file.close();
-  }
-  /// @brief save the matrix in a file in matrix format
-  void saveAsMatrix(std::string fName) const {
-    std::ofstream file(fName);
+  /// @brief print the matrix on a file
+  /// @param filename name of the file
+  void fprint(std::string const &filename) const noexcept {
+    std::ofstream file(filename);
     file << _rows << '\t' << _cols << '\n';
     for (int i = 0; i < _rows; ++i) {
       for (int j = 0; j < _cols; ++j) {
@@ -277,44 +319,11 @@ public:
     file.close();
   }
 
-  /// @brief import a matrix from a file in map format
-  /// @param fName file name
-  void import(std::string fName) {
-    std::ifstream file(fName);
-    if (!file.is_open()) {
-      throw std::runtime_error("SparseMatrix: file not found");
-    }
-    int rows, cols;
-    file >> rows >> cols;
-    _rows = rows;
-    _cols = cols;
-    int index;
-    T value;
-    while (file >> index >> value) {
-      _matrix.emplace(std::make_pair(index, value));
-    }
-    file.close();
+  typename std::unordered_map<int, T>::const_iterator begin() const noexcept {
+    return _matrix.begin();
   }
-  /// @brief import a matrix from a file in matrix format
-  /// @param fName file name
-  void importAsMatrix(std::string fName) {
-    std::ifstream file(fName);
-    if (!file.is_open()) {
-      throw std::runtime_error("SparseMatrix: file not found");
-    }
-    int rows, cols;
-    file >> rows >> cols;
-    _rows = rows;
-    _cols = cols;
-    int index = 0;
-    T value;
-    while (file >> value) {
-      if (static_cast<int>(value) != 0) {
-        _matrix.emplace(std::make_pair(index, value));
-      }
-      ++index;
-    }
-    file.close();
+  typename std::unordered_map<int, T>::const_iterator end() const noexcept {
+    return _matrix.end();
   }
 
   T const &operator()(int i, int j) {
@@ -331,38 +340,65 @@ public:
     auto const &it = _matrix.find(index);
     return it != _matrix.end() ? it->second : _defaultReturn;
   }
+  friend std::ostream &operator<<(std::ostream &os, const SparseMatrix &m) {
+    os << m._rows << '\t' << m._cols << '\n';
+    for (auto &it : m._matrix) {
+      os << it.first << '\t' << it.second << '\n';
+    }
+    return os;
+  }
+  friend std::istream &operator>>(std::istream &is, SparseMatrix &m) {
+    is >> m._rows >> m._cols;
+    int index;
+    T value;
+    while (is >> index >> value) {
+      m._matrix.emplace(std::make_pair(index, value));
+    }
+    return is;
+  }
 
-  SparseMatrix operator+(const SparseMatrix &other) const {
+  template <typename U>
+  SparseMatrix operator+(const SparseMatrix<U> &other) const {
     if (this->_rows != other._rows || this->_cols != other._cols) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
     auto result = SparseMatrix(this->_rows, this->_cols);
-    for (auto &it : this->_matrix) {
-      result.insert(it.first / this->_cols, it.first % this->_cols, it.second);
+    std::unordered_map<int, bool> unique;
+    for(auto &it : this->_matrix) {
+      unique.insert_or_assign(it.first, true);
     }
-    for (auto &it : other._matrix) {
-      result.insert(it.first / other._cols, it.first % other._cols,
-                    it.second + result.at(it.first / other._cols,
-                                          it.first % other._cols));
+    for(auto &it : other._matrix) {
+      unique.insert_or_assign(it.first, true);
+    }
+    for(auto &it : unique) {
+      result.insert(it.first / this->_cols, it.first % this->_cols,
+                    this->at(it.first) +
+                        other.at(it.first));
     }
     return result;
   }
-  SparseMatrix operator-(const SparseMatrix &other) const {
+  template <typename U>
+  SparseMatrix operator-(const SparseMatrix<U> &other) const {
     if (this->_rows != other._rows || this->_cols != other._cols) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
     auto result = SparseMatrix(this->_rows, this->_cols);
-    for (auto &it : this->_matrix) {
-      result.insert(it.first / this->_cols, it.first % this->_cols, it.second);
+    std::unordered_map<int, bool> unique;
+    for(auto &it : this->_matrix) {
+      unique.insert_or_assign(it.first, true);
     }
-    for (auto &it : other._matrix) {
-      result.insert(it.first / other._cols, it.first % other._cols,
-                    result.at(it.first / other._cols, it.first % other._cols) -
-                        it.second);
+    for(auto &it : other._matrix) {
+      unique.insert_or_assign(it.first, true);
+    }
+    for(auto &it : unique) {
+      result.insert(it.first / this->_cols, it.first % this->_cols,
+                    this->at(it.first) -
+                        other.at(it.first));
     }
     return result;
   }
-  SparseMatrix operator*(const SparseMatrix &other) const {
+  template <typename U>
+  SparseMatrix operator*(const SparseMatrix<U> &other) const {
     if (this->_cols != other._rows) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
@@ -401,7 +437,8 @@ public:
     this->_matrix = std::move(other._matrix);
     return *this;
   }
-  SparseMatrix &operator+=(const SparseMatrix &other) {
+  template <typename U>
+  SparseMatrix &operator+=(const SparseMatrix<U> &other) {
     if (this->_rows != other._rows || this->_cols != other._cols) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
@@ -413,7 +450,8 @@ public:
     }
     return *this;
   }
-  SparseMatrix &operator-=(const SparseMatrix &other) {
+  template <typename U>
+  SparseMatrix &operator-=(const SparseMatrix<U> &other) {
     if (this->_rows != other._rows || this->_cols != other._cols) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
@@ -425,7 +463,8 @@ public:
     }
     return *this;
   }
-  SparseMatrix &operator*=(const SparseMatrix &other) {
+  template <typename U>
+  SparseMatrix &operator*=(const SparseMatrix<U> &other) {
     if (this->_cols != other._rows) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
