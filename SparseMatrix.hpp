@@ -140,6 +140,46 @@ public:
         ? _matrix.erase(i * _cols + j)
         : throw std::out_of_range("Index out of range");
   };
+  /// @brief remove a row from the matrix
+  /// @param index row index
+  void ereaseRow(int index) {
+    if (index < 0 || index > _rows - 1) {
+      throw std::out_of_range("Index out of range");
+    }
+    for (int i = 0; i < _cols; ++i) {
+      _matrix.erase(index * _cols + i);
+    }
+    std::unordered_map<int, T> new_matrix = {};
+    for(auto const& [key, value] : _matrix) {
+      if(key / _cols < index) {
+        new_matrix.emplace(std::make_pair(key, value));
+      } else {
+        new_matrix.emplace(std::make_pair(key - _cols, value));
+      }
+    }
+    --_rows;
+    _matrix = new_matrix;
+  };
+  /// @brief remove a column from the matrix
+  /// @param index column index
+  void ereaseColumn(int index) {
+    if (index < 0 || index > _cols - 1) {
+      throw std::out_of_range("Index out of range");
+    }
+    for (int i = 0; i < _rows; ++i) {
+      _matrix.erase(i * _cols + index);
+    }
+    std::unordered_map<int, T> new_matrix = {};
+    for(auto const& [key, value] : _matrix) {
+      if(key % _cols < index) {
+        new_matrix.emplace(std::make_pair(key - key % _rows - 1, value));
+      } else {
+        new_matrix.emplace(std::make_pair((key / _cols + 1) * (_cols - 1) - 1, value));
+      }
+    }
+    --_cols;
+    _matrix = new_matrix;
+  };
   void clear() noexcept { _matrix.clear(); };
   /// \brief check if the element is non zero
   /// \param i row index
