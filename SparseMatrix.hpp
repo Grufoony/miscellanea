@@ -55,8 +55,8 @@ public:
     file >> rows >> cols;
     T value;
     int i = 0;
-    while(file >> value) {
-      if(value != 0) {
+    while (file >> value) {
+      if (value != 0) {
         matrix.emplace(std::make_pair(i, value));
       }
       ++i;
@@ -64,7 +64,7 @@ public:
     file.close();
     file.open(filename, std::ios::out);
     file << rows << '\t' << cols << '\n';
-    for(auto const& [key, value] : matrix) {
+    for (auto const &[key, value] : matrix) {
       file << key << '\t' << value << '\n';
     }
     file.close();
@@ -75,22 +75,23 @@ public:
     std::unordered_map<int, T> matrix = {};
     file >> rows >> cols;
     T value;
-    while(file >> index >> value) {
+    while (file >> index >> value) {
       matrix.emplace(std::make_pair(index, value));
     }
     file.close();
     file.open(filename, std::ios::out);
     file << rows << '\t' << cols << '\n';
-    for(int i = 0; i < rows * cols; ++i) {
+    for (int i = 0; i < rows * cols; ++i) {
       if (matrix.find(i) != matrix.end()) {
         file << matrix[i] << '\t';
       } else {
         file << 0 << '\t';
       }
-      if((i + 1) % cols == 0) {
+      if ((i + 1) % cols == 0) {
         file << '\n';
       }
-  }}
+    }
+  }
 
   /// \brief insert a value in the matrix
   /// \param i row index
@@ -142,7 +143,7 @@ public:
   };
   /// @brief remove a row from the matrix
   /// @param index row index
-  void ereaseRow(int index) {
+  void eraseRow(int index) {
     if (index < 0 || index > _rows - 1) {
       throw std::out_of_range("Index out of range");
     }
@@ -150,8 +151,8 @@ public:
       _matrix.erase(index * _cols + i);
     }
     std::unordered_map<int, T> new_matrix = {};
-    for(auto const& [key, value] : _matrix) {
-      if(key / _cols < index) {
+    for (auto const &[key, value] : _matrix) {
+      if (key / _cols < index) {
         new_matrix.emplace(std::make_pair(key, value));
       } else {
         new_matrix.emplace(std::make_pair(key - _cols, value));
@@ -162,7 +163,7 @@ public:
   };
   /// @brief remove a column from the matrix
   /// @param index column index
-  void ereaseColumn(int index) {
+  void eraseColumn(int index) {
     if (index < 0 || index > _cols - 1) {
       throw std::out_of_range("Index out of range");
     }
@@ -170,11 +171,12 @@ public:
       _matrix.erase(i * _cols + index);
     }
     std::unordered_map<int, T> new_matrix = {};
-    for(auto const& [key, value] : _matrix) {
-      if(key % _cols < index) {
-        new_matrix.emplace(std::make_pair(key - key % _rows - 1, value));
+    for (auto const &[key, value] : _matrix) {
+      if (key % _cols < index) {
+        new_matrix.emplace(std::make_pair(key - key / _rows, value));
       } else {
-        new_matrix.emplace(std::make_pair((key / _cols + 1) * (_cols - 1) - 1, value));
+        new_matrix.emplace(
+            std::make_pair(key / _cols * (_cols - 1) + key % _cols - 1, value));
       }
     }
     --_cols;
@@ -404,16 +406,15 @@ public:
     }
     auto result = SparseMatrix(this->_rows, this->_cols);
     std::unordered_map<int, bool> unique;
-    for(auto &it : this->_matrix) {
+    for (auto &it : this->_matrix) {
       unique.insert_or_assign(it.first, true);
     }
-    for(auto &it : other._matrix) {
+    for (auto &it : other._matrix) {
       unique.insert_or_assign(it.first, true);
     }
-    for(auto &it : unique) {
+    for (auto &it : unique) {
       result.insert(it.first / this->_cols, it.first % this->_cols,
-                    this->at(it.first) +
-                        other.at(it.first));
+                    this->at(it.first) + other.at(it.first));
     }
     return result;
   }
@@ -424,16 +425,15 @@ public:
     }
     auto result = SparseMatrix(this->_rows, this->_cols);
     std::unordered_map<int, bool> unique;
-    for(auto &it : this->_matrix) {
+    for (auto &it : this->_matrix) {
       unique.insert_or_assign(it.first, true);
     }
-    for(auto &it : other._matrix) {
+    for (auto &it : other._matrix) {
       unique.insert_or_assign(it.first, true);
     }
-    for(auto &it : unique) {
+    for (auto &it : unique) {
       result.insert(it.first / this->_cols, it.first % this->_cols,
-                    this->at(it.first) -
-                        other.at(it.first));
+                    this->at(it.first) - other.at(it.first));
     }
     return result;
   }
@@ -477,8 +477,7 @@ public:
     this->_matrix = std::move(other._matrix);
     return *this;
   }
-  template <typename U>
-  SparseMatrix &operator+=(const SparseMatrix<U> &other) {
+  template <typename U> SparseMatrix &operator+=(const SparseMatrix<U> &other) {
     if (this->_rows != other._rows || this->_cols != other._cols) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
@@ -490,8 +489,7 @@ public:
     }
     return *this;
   }
-  template <typename U>
-  SparseMatrix &operator-=(const SparseMatrix<U> &other) {
+  template <typename U> SparseMatrix &operator-=(const SparseMatrix<U> &other) {
     if (this->_rows != other._rows || this->_cols != other._cols) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
@@ -503,8 +501,7 @@ public:
     }
     return *this;
   }
-  template <typename U>
-  SparseMatrix &operator*=(const SparseMatrix<U> &other) {
+  template <typename U> SparseMatrix &operator*=(const SparseMatrix<U> &other) {
     if (this->_cols != other._rows) {
       throw std::runtime_error("SparseMatrix: dimensions do not match");
     }
