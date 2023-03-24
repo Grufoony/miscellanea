@@ -1,6 +1,6 @@
-sparseMatrix:
-	clear
-	g++ -std=c++20 -Wall -Wextra -fsanitize=address -O3 test.cpp && ./a.out
 download:
 	clear
 	python3 downloader.py
+update:
+	clear
+	python3 updater.py
