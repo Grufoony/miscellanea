@@ -1,20 +1,30 @@
+import pytube
 from pytube import YouTube
 from pytube import Playlist
-import pytube
 import os
 from moviepy.editor import AudioFileClip
 from tqdm import tqdm
 
-print("Welcome to YouTube downloader v 1.0 by Grufoony https://github.com/Grufoony\n")
-print("If you want to download a playlist just insert 'playlist' instead of the video url, next you can insert the url of the playlist.\nIf you want to exit just type '.q' instead of the url.\n\n")
+if not os.path.exists("./temp"):
+    os.mkdir("./temp")
+if not os.path.exists("./mp3"):
+    os.mkdir("./mp3")
+
+print("Welcome to YouTube downloader v1.1 by Grufoony https://github.com/Grufoony")
+print("If you want to download a playlist just type 'playlist' or '.p' instead of the video url, next you can insert the url of the playlist.")
+print("If you want to exit just type '.q' instead of the url.")
+print("")
+
+pl = ["playlist", ".p"]
+leave = [".q"]
 
 while True:
     url = input("Insert video url:\n")
-    if url == ".q":
+    if url in leave:
         break
-    if url == "playlist":
+    if url in pl:
         url = input("Insert playlist url:\n")
-        if url == ".q":
+        if url in leave:
             break
         playlist = Playlist(url)
         print(f'Number of videos in playlist: {len(playlist.video_urls)}')
