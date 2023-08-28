@@ -1,5 +1,5 @@
-import pkg_resources
+from importlib.metadata import distributions
 from subprocess import call
 
-packs = [dist.project_name for dist in pkg_resources.working_set]
+packs = [dist.name for dist in distributions()]
 call("pip install --upgrade " + ' '.join(packs), shell=True)
