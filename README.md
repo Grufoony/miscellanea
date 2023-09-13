@@ -13,15 +13,15 @@ A python script which help you to download and convert to mp3 from YouTube.
 ## updater.py <div id='pip'/>
 A python script which help you to update all python's installed packages with pip.
 
-## doctest_installer.sh <div id='doctest'/>
+## install_doctest.sh <div id='doctest'/>
 A simple installer for the C++ library of doctest.
 It will install the library into `usr/doctest/`, so it will be accessible with:
 ```c++
 #include <doctest/doctest.h>
 ```
-In order to make the run successful, run the script in *sudo* mode:
+The script is executed with the command:
 ```shell
-sudo ./doctest_installer.sh
+./install_doctest.sh
 ```
 
 ## article.tex <div id='template'/>
