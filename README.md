@@ -19,9 +19,9 @@ It will install the library into `usr/doctest/`, so it will be accessible with:
 ```c++
 #include <doctest/doctest.h>
 ```
-In order to make the run successful, run the script in *sudo* mode:
+The script is executed with the command:
 ```shell
-sudo ./doctest_installer.sh
+./doctest_installer.sh
 ```
 
 ## article.tex <div id='template'/>
