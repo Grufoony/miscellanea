@@ -1,4 +1,4 @@
-# miscellaneous
+# miscellanea
 Collection of miscellaneous things
 
 ## Table of contents
