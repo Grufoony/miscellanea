@@ -29,7 +29,7 @@ The script is executed with the command:
 A LaTeX template for a scientific article, e.g. a lab report.
 
 ## GitHub tricks <div id='github'/>
-If you want to delete in local all deleted branches of the git just do:
+If you want to delete in local all deleted branches of a repository just do:
 ```shell
 git fetch -p && for branch in $(git for-each-ref --format '%(refname) %(upstream:track)' refs/heads | awk '$2 == "[gone]" {sub("refs/heads/", "", $1); print $1}'); do git branch -D $branch; done
 ```
