@@ -7,6 +7,7 @@ Collection of miscellaneous things
 3. [doctest installer](#doctest)
 4. [Article Template - LaTeX](#template)
 5. [GitHub tricks](#github)
+6. [WSL config file](#wslconfig)
 
 ## downloader.py <div id='youtube'/>
 A python script which help you to download and convert to mp3 from YouTube.
@@ -39,3 +40,6 @@ If you want to remove a file from git history you can do:
 git filter-branch --index-filter 'git rm -rf --cached --ignore-unmatch path_to_file' HEAD
 git push --force
 ```
+
+## WSL config file <div id='wslconfig'/>
+My config file for WSL2. You should put it in the Windows user folder.
