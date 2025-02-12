@@ -46,8 +46,13 @@ while True:
 
 for file in os.listdir("./m4a"):
     if file.endswith(".m4a"):
+        original_name = file
+        # remove extension
+        file = file[:-4]
         # remove official video tag
-        title = file.split("(")[0].strip()
-        os.rename(f"./m4a/{file}", f"./m4a/{title}.m4a")
+        title = file.split("[")[0].strip()
+        # Remove any string between parentheses with "official" in it
+        title = title.split("(Official")[0].strip()
+        os.rename(f"./m4a/{original_name}", f"./m4a/{title}.m4a")
 
 print("Download and conversion complete!")
