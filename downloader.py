@@ -12,7 +12,9 @@ YT_OPTIONS = {
 if not os.path.exists("./m4a"):
     os.mkdir("./m4a")
 
-print(f"Welcome to YouTube downloader v{__version__} by {__author__} https://github.com/Grufoony")
+print(
+    f"Welcome to YouTube downloader v{__version__} by {__author__} https://github.com/Grufoony"
+)
 print("If you want to exit just type 'quit' or similar keywords instead of the URL.\n")
 
 while True:
