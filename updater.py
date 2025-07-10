@@ -27,9 +27,9 @@ if packs:
             ):
                 processed += 1
                 progress.update(1)
-                print(line, end="")
+                progress.write(line, end="")
             else:
-                print(line, end="")
+                progress.write(line, end="")
     process.wait()
     progress.close()
 print(f"Number of packages already up to date: {uptodate_counts}")
