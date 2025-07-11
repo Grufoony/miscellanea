@@ -1,16 +1,20 @@
 from importlib.metadata import distributions
+import os
 import subprocess
 from tqdm import tqdm
 
 packs = [dist.name for dist in distributions()]
 cmd = ["pip", "install", "--upgrade", "--no-deps"] + packs
 
+env = os.environ.copy()
+env["FORCE_COLOR"] = "1"
+
 uptodate_counts = 0
 progress = tqdm(total=len(packs), desc="Updating packages", unit="pkg")
 processed = 0
 if packs:
     process = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env
     )
     if process.stdout is not None:
         for line in process.stdout:
